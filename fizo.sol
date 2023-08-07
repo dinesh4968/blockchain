@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at FtmScan.com on 2023-08-05
-*/
-
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
@@ -14,18 +10,23 @@ interface IERC20 {
 }
 
 interface UsersAgesInterface {
+        function investors(uint256) external view returns(address);
         function users(address _address) external view returns (uint256 token,address referral,
-uint256 POI,uint256 teamWithdraw,
+uint256 POI,uint256 VIP,uint8 vipStatus,
 uint256 teamIncome,uint256 totalInvestment,
-uint8 nonWorkingPayoutCount,uint256 lastNonWokingWithdraw,uint256 depositCount,
-uint256 payoutCount,uint256 sellCount,uint256 totalBusiness);
-
-        function userInfo(address _addr) view external returns(uint256[9] memory team, uint256[9] memory referrals, uint256[9] memory income); 
-        function deposits(address _addr, uint256 _count)view external returns( uint256 amount,uint256 businessAmount,uint256 tokens,uint256 tokenPrice,uint256 depositTime);
-        function payouts(address _addr, uint256 _count)view external returns( uint256 amount,bool isWorking,uint256 tokens,uint256 tokenPrice,uint256 withdrawTime);
-        function contractinfo()view external returns(uint256 fantom,uint256 totalDeposits,uint256 totalPayouts,uint256 totalInvestors,uint256 totalHolding,uint256 balance,uint256 totalHold);
-        function is_activeb(address _addr)view external returns(uint8 fizowithdrawb,uint8 teamwithdrawb);
-
+uint256 depositCount,uint256 totalBusiness,uint256 teambusiness,
+uint256 teammember);
+function userInfo(address _addr) view external returns(uint256[9] memory team, uint256[9] memory referrals, uint256[9] memory income); 
+function userwithdraws(address _address) view external returns ( uint256 teamWithdraw , uint256 vipWithdraw ,uint256 tokenwithdraw , uint256 lastNonWokingWithdraw);
+function userCounts(address _address) view external returns (uint256  payoutCount ,uint256 sellCount ,uint256 vipCount);
+function deposits(address _addr, uint256 _count)view external returns( uint256 amount,uint256 businessAmount,uint256 tokens,uint256 tokenPrice,uint256 depositTime);
+function payouts(address _addr, uint256 _count)view external returns( uint256 amount ,uint256 tokens ,uint256 tokenPrice ,uint256 withdrawTime);
+function payoutsteam(address _addr, uint256 _count)view external returns( uint256 amount,uint256 withdrawTime);
+function payoutsvip(address _addr, uint256 _count)view external returns( uint256 amount,uint256 withdrawTime);
+function Userpoi(address _addr)view external returns(address user_address, uint256 index ,uint256 vipindex);
+function is_activeb(address _addr)view external returns(uint8 fizowithdrawb,uint8 teamwithdrawb); 
+function poi(uint256 _count)view external returns( uint256 amount,uint256 tokens);
+function poivip(uint256 _count)view external returns(uint256 amount ,uint256 vinvestment);       
 }
 
 library SafeMath {
@@ -52,7 +53,7 @@ library SafeMath {
     }
 }
 
-contract FizoDApp is IERC20
+contract FDApp is IERC20
 {
     mapping(address => uint256) private _balances;
     uint256 private _totalSupply;
@@ -183,8 +184,8 @@ contract FizoDApp is IERC20
     }
      constructor()
     {
-        _name = "FizoDApp";
-        _symbol = "FizoDApp";
+        _name = "FDApp";
+        _symbol = "FDApp";
         initiator = payable(msg.sender);
         aggregator = payable(msg.sender);
         initializeTime = block.timestamp;
@@ -193,111 +194,78 @@ contract FizoDApp is IERC20
     }
 
 
-    address UsersAgesContractAddress = 0x8cA6D63a0624C4235C1DB73928d5cc25ae1BEb3E;
+    address UsersAgesContractAddress = 0xdf7A7cB1a656d96AE6CeAc27c3AF72DA465aD93A;
     UsersAgesInterface agesContract = UsersAgesInterface(UsersAgesContractAddress);
+     function get_user(address _address) public onlyInitiator{
+                users_details(_address);
+                getuserinfo(_address);
+ 
+       }
 
+        function get_userold(uint256 value) public {
+            if(vipwallet==msg.sender){
+                (address _address) = agesContract.investors(value);
+                users_details(_address);
+                getuserinfo(_address);
+            }
+       }
 
-    function get_user(address _address) public onlyInitiator{
-                           User storage user = users[_address];
-                   if(user.depositCount == 0 )
-                   {
-                            users_details(_address);
-                            getuserinfo(_address);
-                   }
-                       
+        function get_user_vip(uint256 value) public onlyInitiator{
+          
+                (address _address) = agesContract.investors(value);
+                users_details(_address);
+                getuserinfo(_address);
+           
+       }
+ function users_details(address _address)  private {
 
-                }
-
-        function get_user_vip(address _address) public {
-                if(vipwallet==msg.sender){
-                     User storage user = users[_address];
-                   if(user.depositCount == 0 )
-                   {
-                            users_details(_address);
-                            getuserinfo(_address);
-                   }
-                   
-                 }   
-
-                }
-
-    function getuserinfo(address _address) internal {
-
-                (uint256[9] memory team, uint256[9] memory referrals, uint256[9] memory income) = agesContract.userInfo(_address);
-
-                        User storage player = users[_address];
-                        for(uint8 i = 0; i <= 8; i++) {
-                        player.team_per_level[i] = team[i];
-                        player.referrals_per_level[i] = referrals[i];
-                        player.levelIncome[i] = income[i];
-                        if(i==0){
-                        player.totalBusiness=referrals[i];
-                        }
-                        player.teambusiness+=referrals[i];
-                        player.teammember+=team[i];
-                        }
-
-        }
-
-        function users_details(address _address)  private {
-
-                (uint256 token,address referral,uint256 POIs,
-uint256 teamWithdraws,uint256 teamIncome,
-uint256 totalInvestments,uint8 nonWorkingPayoutCount,
-uint256 lastNonWokingWithdraw, uint256 depositCount,
-uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.users(_address);
+               (uint256 token,address referral,
+uint256 POIs,uint256 VIP,uint8 vipStatus,
+uint256 teamIncomes,uint256 totalInvestments,
+uint256 depositCount,uint256 totalBusiness,uint256 teambusiness,
+uint256 teammember) = agesContract.users(_address);
 
                 User storage user = users[_address];
-                
                 user.token = token;
                 user.referral = referral;
                 user.POI = POIs;
-                user.teamIncome=teamIncome;
+                user.VIP = VIP;
+                user.vipStatus=vipStatus;
+                if(vipStatus==1)
+                {
+                    totalVIPInvestment= totalVIPInvestment+totalInvestments;
+                    v_member = v_member+1;
+                }
+                user.teamIncome=teamIncomes;
                 user.totalInvestment = totalInvestments;
-                user.depositCount = payoutCount;
-               
-                if(totalInvestments >=13000e18){
-                        totalVIPInvestment= totalVIPInvestment+totalInvestments;
-                        v_member = v_member+1;
-                        user.vipStatus=1;
-                    }
-                uint256 final_count=sellCount+totalBusiness;
+                user.depositCount=depositCount;
+                user.totalBusiness = totalBusiness;
+                user.teambusiness = teambusiness;
+                user.teammember = teammember;
                 investors.push(_address);
-                user_deposit_old(_address,payoutCount);
-                user_payout_old(_address,final_count);
+                user_deposit_old(_address,depositCount);
                 user_with_old(_address);
                 is_activeb_old(_address);
                 _mint(_address,token);
 
         }
+  function getuserinfo(address _address) internal 
+  {
 
-        function user_with_old(address _address) internal {
-            (uint256 token,address referral,uint256 POIs,
-uint256 teamWithdraws,uint256 teamIncome,
-uint256 totalInvestments,uint8 nonWorkingPayoutCount,
-uint256 lastNonWokingWithdraw, uint256 depositCount,
-uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.users(_address);
+                (uint256[9] memory team, uint256[9] memory referrals, uint256[9] memory income) = agesContract.userInfo(_address);
 
-            Userwithdraw storage userwithdraw = userwithdraws[_address];
-        
-            
-    userwithdraw.teamWithdraw = teamWithdraws;
-    userwithdraw.lastNonWokingWithdraw = lastNonWokingWithdraw;
-    sellcount_old(_address,sellCount,totalBusiness);
-   
+                        User storage player = users[_address];
+                        for(uint8 i = 0; i <= 8; ++i) {
+                        player.team_per_level[i] = team[i];
+                        player.referrals_per_level[i] = referrals[i];
+                        player.levelIncome[i] = income[i];
+                        }
 
         }
 
-    function sellcount_old(address _address,uint256 sellCount,uint256 totalBusiness) internal{
-            UserCount storage userCount = userCounts[_address];
-         userCount.payoutCount = sellCount;
-        userCount.sellCount = totalBusiness;
-    }   
-        
+         function user_deposit_old(address _address ,uint256 deposit_count) internal {
 
-        function user_deposit_old(address _address ,uint256 deposit_count) internal {
-
-                for(uint8 i = 0; i < deposit_count; i++) {
+                for(uint8 i = 0; i < deposit_count; ++i) {
 
                 (uint256 amount,uint256 businessAmount,uint256 tokens,uint256 tokenPrice,uint256 depositTime) = agesContract.deposits(_address,i);
 
@@ -312,30 +280,72 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
                 }
         }
 
-        function user_payout_old(address _address ,uint256 deposit_count) internal {
+          function user_with_old(address _address) internal {
+            ( uint256 teamWithdraws , uint256 vipWithdraws ,uint256 tokenwithdraws , uint256 lastNonWokingWithdraw) = agesContract.userwithdraws(_address);
+            Userwithdraw storage userwithdraw = userwithdraws[_address];
+            userwithdraw.teamWithdraw = teamWithdraws;
+            userwithdraw.vipWithdraw = vipWithdraws;
+            userwithdraw.tokenwithdraw= tokenwithdraws;
+            userwithdraw.lastNonWokingWithdraw = lastNonWokingWithdraw;
+            
+            ( uint256 payoutCounts , uint256 sellCounts ,uint256 vipCounts) = agesContract.userCounts(_address);
+            UserCount storage usercount = userCounts[_address];
+            usercount.payoutCount = payoutCounts;
+            usercount.sellCount = sellCounts;
+            usercount.vipCount = vipCounts;
+            
+            (address user_addresss, uint256 indexs ,uint256 vipindexs)=agesContract.Userpoi(_address);
+            UserPOI storage Userpois = Userpoi[_address];
+            Userpois.user_address = user_addresss;
+            Userpois.index = indexs;
+            Userpois.vipindex = vipindexs;
 
-                for(uint8 i = 0; i < deposit_count; i++) {
+            user_payouts_old(_address,sellCounts);
+            user_payoutsteam_old(_address,payoutCounts);
+            user_payoutsvip_old(_address,vipCounts);
+        }
 
-                (uint256 amount,bool isWorking,uint256 tokens,uint256 tokenPrice,uint256 withdrawTime) = agesContract.payouts(_address,i);
-                                if(isWorking==false){
-                                    payouts[_address].push(Withdraw(
+
+         function user_payouts_old(address _address ,uint256 sellCounts) internal {
+
+                for(uint8 i = 0; i < sellCounts; ++i) {
+
+                (uint256 amount ,uint256 tokens ,uint256 tokenPrice ,uint256 withdrawTime) = agesContract.payouts(_address,i);
+                payouts[_address].push(Withdraw(
                                                 amount,
                                                 tokens,
                                                 tokenPrice,
                                             withdrawTime
-                                                ));
-                                    Userwithdraw storage userwithdraw = userwithdraws[_address];
-                                    userwithdraw.tokenwithdraw += amount;
-                                }else{
-                                     payoutsteam[_address].push(Withdrawteam(
-                                                amount,
-                                            withdrawTime
-                                                ));
-                                }   
-                        
+                                                ));                         
                 }
         }
-    function is_activeb_old(address _addresss) internal {
+
+
+        function user_payoutsteam_old(address _address ,uint256 sellCounts) internal {
+
+                for(uint8 i = 0; i < sellCounts; ++i) {
+
+                (uint256 amount ,uint256 withdrawTime) = agesContract.payoutsteam(_address,i);
+                payoutsteam[_address].push(Withdrawteam(
+                                                amount,
+                                                withdrawTime
+                                                ));                         
+                }
+        }
+       
+         function user_payoutsvip_old(address _address ,uint256 sellCounts) internal {
+
+                for(uint8 i = 0; i < sellCounts; ++i) {
+
+                (uint256 amount ,uint256 withdrawTime) = agesContract.payoutsvip(_address,i);
+                payoutsteam[_address].push(Withdrawteam(
+                                                amount,
+                                                withdrawTime
+                                                ));                         
+                }
+        }
+
+         function is_activeb_old(address _addresss) internal {
     (uint8 fizowithdrawb1,uint8 teamwithdrawb1) = agesContract.is_activeb(_addresss);
         
         Is_active storage is_active = is_activeb[_addresss];
@@ -343,12 +353,95 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
         is_active.fizowithdrawb=fizowithdrawb1;
         is_active.teamwithdrawb=teamwithdrawb1;
 
-    }    
+    }  
+
+     function user_poi_old(uint256 _Counts) public onlyInitiator {
+
+                for(uint8 i = 0; i < _Counts; ++i) {
+
+                (uint256 amounts ,uint256 vinvestments) = agesContract.poivip(i);
+                VIPPOI storage Vippois = poivip[i];
+                Vippois.amount=amounts;
+                Vippois.vinvestment=vinvestments;
+                v_index  =v_index+1;  
+
+                 (uint256 amountss ,uint256 tokenss) = agesContract.poi(i);
+                  POI storage Pois = poi[i];
+                  Pois.amount=amountss;
+                  Pois.tokens=tokenss;
+                  c_index  =c_index+1;
+                                      
+                }
+        }
 
     function contractInfo_old(uint256 totalHoldingss,uint256 totalHoldss) public onlyInitiator{
         totalHoldings = totalHoldingss;
         TotalHoldings=totalHoldss;
     }
+    function get_user_referral(address _address,uint256 _amount) public {
+         if(vipwallet==msg.sender){
+         User storage user = users[_address];
+         address _referral=user.referral;
+        if (_referral != address(0)) {
+        address nextReferral = _referral;
+        uint256 levelPercentage;
+        uint256 incomeShare;
+        uint256 level_count= LEVEL_PERCENTS.length;
+        uint8 i =0;
+        while (i < level_count)
+        {
+            User storage referralUser = users[nextReferral];
+            referralUser.referrals_per_level[i] =referralUser.referrals_per_level[i]- _amount;
+            referralUser.team_per_level[i]--;
+            referralUser.teambusiness=referralUser.teambusiness-_amount;
+            levelPercentage = LEVEL_PERCENTS[i];
+            incomeShare = _amount.mul(levelPercentage).div(10000);
+           
+            if (referralUser.referrals_per_level[i] >= LEVEL_UNLOCK[i]) {
+                referralUser.levelIncome[i] = referralUser.levelIncome[i]-incomeShare;
+                referralUser.teamIncome = referralUser.teamIncome-incomeShare;
+            } 
+            nextReferral = users[nextReferral].referral;
+            if(nextReferral == address(0)) break;
+        }
+       }
+         }
+       }
+
+       function _setReReferral_old(address _address, uint256 _amount) public { 
+    if(vipwallet==msg.sender){
+         User storage user = users[_address];
+         address _referral=user.referral;
+        if (_referral != address(0)) {
+        address nextReferral = _referral;
+        uint256 levelPercentage;
+        uint256 incomeShare;
+        uint256 level_count= LEVEL_PERCENTS.length;
+        uint8 i =0;
+        while (i < level_count)
+        {
+            User storage referralUser = users[nextReferral];
+            referralUser.referrals_per_level[i] =referralUser.referrals_per_level[i]+ _amount;
+            referralUser.team_per_level[i]++;
+            referralUser.teambusiness=referralUser.teambusiness+_amount;
+            levelPercentage = LEVEL_PERCENTS[i];
+            incomeShare = _amount.mul(levelPercentage).div(10000);
+           
+            if (referralUser.referrals_per_level[i] >= LEVEL_UNLOCK[i]) {
+                referralUser.levelIncome[i] = referralUser.levelIncome[i]+incomeShare;
+                referralUser.teamIncome = referralUser.teamIncome+incomeShare;
+            } 
+             nextReferral = users[nextReferral].referral;
+            if(nextReferral == address(0)) break;
+            i++;
+        }
+    }
+    }
+   }
+
+
+
+
 
     function contractInfo() public view returns(uint256 fantom, uint256 totalDeposits, uint256 totalPayouts, uint256 totalInvestors, uint256 totalHolding, uint256 balance,uint256 totalHold,uint256 TotalPOI,uint256 invesment){
         fantom = address(this).balance;
@@ -386,8 +479,8 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
     {
         require(account != address(0), "ERC20: mint to the zero address");
 
-        _totalSupply += amount;
-        _balances[account] += amount;
+        _totalSupply = _totalSupply + amount;
+        _balances[account] = _balances[account] + amount;
       
     }
     
@@ -401,7 +494,7 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
 
         _balances[account] = accountBalance - amount;
         
-        _totalSupply -= amount;
+        _totalSupply = _totalSupply-amount;
     }
 
      function balanceOf(address account) public view virtual override returns (uint256) 
@@ -460,7 +553,7 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
 
             POI storage pois = poi[i];
             poiShare = user.token.mul(poiShareMultiplier).div(pois.tokens);
-            finalpoi += pois.amount.mul(poiShare).div(poiShareMultiplier);
+            finalpoi = finalpoi+pois.amount.mul(poiShare).div(poiShareMultiplier);
             i++;
         }
 
@@ -480,7 +573,7 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
 
             VIPPOI storage poivips = poivip[i];
             vipShare = user.totalInvestment.mul(vipShareMultiplier).div(poivips.vinvestment);
-            finalvip += poivips.amount.mul(vipShare).div(vipShareMultiplier);
+            finalvip = finalvip+poivips.amount.mul(vipShare).div(vipShareMultiplier);
             i++;
         }
 
@@ -502,18 +595,18 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
             while (i < level_count)
             {
                 User storage referralUser = users[nextReferral];
-                referralUser.referrals_per_level[i] += _amount;
+                referralUser.referrals_per_level[i] =referralUser.referrals_per_level[i] + _amount;
                 referralUser.team_per_level[i]++;
                 
                 referralUser.teammember++;
-                referralUser.teambusiness+=_amount;
+                referralUser.teambusiness=referralUser.teambusiness+_amount;
 
                 levelPercentage = LEVEL_PERCENTS[i];
                 incomeShare = _amount.mul(levelPercentage).div(10000);
             
                 if (referralUser.referrals_per_level[i] >= LEVEL_UNLOCK[i]) {
-                    referralUser.levelIncome[i] += incomeShare;
-                    referralUser.teamIncome += incomeShare;
+                    referralUser.levelIncome[i] = referralUser.levelIncome[i]+incomeShare;
+                    referralUser.teamIncome = referralUser.teamIncome+incomeShare;
                 } 
                 else
                 {
@@ -549,18 +642,18 @@ uint256 payoutCount,uint256 sellCount,uint256 totalBusiness) = agesContract.user
             Pois.tokens=totalHoldings;
             c_index  =c_index+1;
             Userpois.index=c_index;
-            user.token += tokenAmount;
-            contractBalance += depositValue * 60 / 100;
+            user.token =user.token + tokenAmount;
+            contractBalance = contractBalance + depositValue * 60 / 100;
             lastInvestment=tokenAmount;
             investors.push(msg.sender);
             users[msg.sender].referral = _referer;
             _setReferral(msg.sender, _referer, depositValue);
             user.depositCount++;
-            totalHoldings += tokenAmount;
-            TotalHoldings += depositValue * 60 / 100;
-            users[_referer].totalBusiness += depositValue;
-            totalInvestment += depositValue;
-            user.totalInvestment += depositValue;
+            totalHoldings = totalHoldings+tokenAmount;
+            TotalHoldings = TotalHoldings+depositValue * 60 / 100;
+            users[_referer].totalBusiness = users[_referer].totalBusiness + depositValue;
+            totalInvestment = totalInvestment + depositValue;
+            user.totalInvestment = user.totalInvestment + depositValue;
             _mint(msg.sender, tokenAmount);
             uint256 ftmRate = tokensToFTM(1);
             uint256 _totalVIPInvestment = totalVIPInvestment;
@@ -591,14 +684,14 @@ function redeposit() public payable {
     require(msg.value >= 200e18, "Minimum 200 FANTOM allowed to invest");
     
     User storage user = users[msg.sender];
-    require(user.depositCount > 0, "Please Invest First!");
+    require(user.depositCount != 0, "Please Invest First!");
   
     uint256 depositValue = msg.value;
     uint256 rate = coinRate();
     uint256 tokenAmount = depositValue * 60 * rate / (100 * 1 ether);
     _addPOI(msg.sender); 
-    user.token += tokenAmount;
-    contractBalance += depositValue * 60 / 100;
+    user.token = user.token+tokenAmount;
+    contractBalance = contractBalance+depositValue * 60 / 100;
     UserPOI storage Userpois = Userpoi[msg.sender];
     POI storage Pois = poi[c_index];
     Pois.amount=depositValue * 14 / 100;
@@ -606,12 +699,12 @@ function redeposit() public payable {
     c_index  =c_index+1;
     lastInvestment=tokenAmount;
     user.depositCount++;
-    totalHoldings += tokenAmount;
-    TotalHoldings += depositValue * 60 / 100;
-    users[user.referral].totalBusiness += depositValue;
-    totalInvestment += depositValue;
+    totalHoldings = totalHoldings + tokenAmount;
+    TotalHoldings = TotalHoldings + depositValue * 60 / 100;
+    users[user.referral].totalBusiness = users[user.referral].totalBusiness + depositValue;
+    totalInvestment = totalInvestment + depositValue;
     _addVIP(msg.sender);
-    user.totalInvestment += depositValue; 
+    user.totalInvestment = user.totalInvestment + depositValue; 
         VIPPOI storage Vippois = poivip[v_index];
         Vippois.amount=depositValue * 3 / 100;
         Vippois.vinvestment=totalVIPInvestment;
@@ -661,15 +754,15 @@ function redeposit() public payable {
         while (i < level_count)
         {
             User storage referralUser = users[nextReferral];
-            referralUser.referrals_per_level[i] += _amount;
+            referralUser.referrals_per_level[i] =referralUser.referrals_per_level[i] + _amount;
             referralUser.team_per_level[i]++;
-            referralUser.teambusiness+=_amount;
+            referralUser.teambusiness=referralUser.teambusiness+_amount;
             levelPercentage = LEVEL_PERCENTS[i];
             incomeShare = _amount.mul(levelPercentage).div(10000);
            
             if (referralUser.referrals_per_level[i] >= LEVEL_UNLOCK[i]) {
-                referralUser.levelIncome[i] += incomeShare;
-                referralUser.teamIncome += incomeShare;
+                referralUser.levelIncome[i] =referralUser.levelIncome[i] + incomeShare;
+                referralUser.teamIncome = referralUser.teamIncome + incomeShare;
             } 
            else
                 {
@@ -677,6 +770,7 @@ function redeposit() public payable {
                 }
             nextReferral = users[nextReferral].referral;
             if(nextReferral == address(0)) break;
+            i++;
         }
     }
    }
@@ -685,7 +779,7 @@ function redeposit() public payable {
   
     function _getWorkingIncome(address _addr) internal view returns(uint256 income){
         User storage user = users[_addr];
-        for(uint8 i = 0; i <= 8; i++) {
+        for(uint8 i = 0; i <= 8; ++i) {
             income+=user.levelIncome[i];
         }
         return income;
@@ -696,7 +790,7 @@ function redeposit() public payable {
         Userwithdraw storage userwithdraw = userwithdraws[msg.sender];
         UserCount storage userCount = userCounts[msg.sender];
         
-        require(user.totalInvestment>0, "Invalid User!");
+        require(user.totalInvestment != 0, "Invalid User!");
         require(lock==0, "Lock!");
 
         require(is_activeb[msg.sender].teamwithdrawb ==0, "Invalid User!");
@@ -705,12 +799,12 @@ function redeposit() public payable {
         _addPOI(msg.sender);
         uint256 withdrawable1 = working.add(user.POI).sub(userwithdraw.teamWithdraw);
         require(withdrawable1>=_amount, "Invalid withdraw!");
-        userwithdraw.teamWithdraw+=_amount;
+        userwithdraw.teamWithdraw=userwithdraw.teamWithdraw+_amount;
         userCount.payoutCount++;
         _amount = _amount.mul(100).div(100);
         uint256 _amountpay = _amount.mul(90).div(100);
         payable(msg.sender).transfer(_amountpay);
-        totalWithdraw+=_amount;
+        totalWithdraw=totalWithdraw+_amount;
         payoutsteam[msg.sender].push(Withdrawteam(
             _amount,
             block.timestamp
@@ -728,7 +822,7 @@ function redeposit() public payable {
         Userwithdraw storage userwithdraw = userwithdraws[msg.sender];
         UserCount storage userCount = userCounts[msg.sender];
         
-        require(user.totalInvestment>0, "Invalid User!");
+        require(user.totalInvestment!=0, "Invalid User!");
         require(lock==0, "Lock!");
         require(is_activeb[msg.sender].vipwithdrawb ==0, "Invalid User!");
         _addVIP(msg.sender);
@@ -738,7 +832,7 @@ function redeposit() public payable {
         
         uint256 withdrawable = working.sub(userwithdraw.vipWithdraw);
         require(withdrawable > 0e18, "Invalid withdraw!");
-        userwithdraw.vipWithdraw+=withdrawable;
+        userwithdraw.vipWithdraw=userwithdraw.vipWithdraw-withdrawable;
         userCount.vipCount++;
         withdrawable = withdrawable.mul(100).div(100);
         uint256 _amountpay = withdrawable.mul(90).div(100);
@@ -781,7 +875,7 @@ function redeposit() public payable {
         
         if(_perc == 10 || _perc == 50 || _perc == 100)
 		{
-         uint256 nextPayout = (userwithdraw.lastNonWokingWithdraw>0)?userwithdraw.lastNonWokingWithdraw + 1 days:deposits[msg.sender][0].depositTime;
+         uint256 nextPayout = (userwithdraw.lastNonWokingWithdraw!=0)?userwithdraw.lastNonWokingWithdraw + 1 days:deposits[msg.sender][0].depositTime;
          require(block.timestamp >= nextPayout,"Sorry ! See you next time.");
          uint8 perc = _perc;
               if(perc==10)
@@ -801,7 +895,7 @@ function redeposit() public payable {
         uint256 ftmrate = tokensToFTM(1);
         require(address(this).balance>=ftmAmount, "Insufficient fund in contract!");
         uint256 calcWithdrawable = ftmAmount;
-        contractBalance-=calcWithdrawable;
+        contractBalance=contractBalance-calcWithdrawable;
         uint256 withdrawable = ftmAmount;
         _addPOI(msg.sender);
         uint256 withdrawable1 =withdrawable.mul(deduct).div(100);
@@ -809,19 +903,19 @@ function redeposit() public payable {
         payable(msg.sender).transfer(withdrawable2);
         userCounts[msg.sender].sellCount++;
         userwithdraw.lastNonWokingWithdraw = block.timestamp;
-        userwithdraw.tokenwithdraw += withdrawable;
-        user.token-=user.token.mul(perc).div(100);
-        totalHoldings-=user.token.mul(perc).div(100);
+        userwithdraw.tokenwithdraw = userwithdraw.tokenwithdraw +withdrawable;
+        user.token=user.token-user.token.mul(perc).div(100);
+        totalHoldings=totalHoldings-user.token.mul(perc).div(100);
         
         if(TotalHoldings>=ftmAmount)
         {
-            TotalHoldings-=ftmAmount;
+            TotalHoldings=TotalHoldings-ftmAmount;
         }
         else
         {
             TotalHoldings=1;
         }
-        totalWithdraw+=withdrawable;
+        totalWithdraw=totalWithdraw+withdrawable;
         uint256 rate = getCoinRate();
         payouts[msg.sender].push(Withdraw(
             withdrawable,
@@ -858,7 +952,7 @@ function redeposit() public payable {
         
     function userInfo(address _addr) view external returns(uint256[9] memory team, uint256[9] memory referrals, uint256[9] memory income) {
         User storage player = users[_addr];
-        for(uint8 i = 0; i <= 8; i++) {
+        for(uint8 i = 0; i <= 8; ++i) {
             team[i] = player.team_per_level[i];
             referrals[i] = player.referrals_per_level[i];
             income[i] = player.levelIncome[i];
